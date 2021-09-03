@@ -1,0 +1,15 @@
+#set($locations = $session.getTable("Location").getFilteredTable("Parent", "is null"))
+#foreach($location in $locations)
+	#set($sublocations = $location.getConnectedTable("Location"))
+	#foreach($sublocation in $sublocations)
+		#set($subsublocations = $sublocation.getConnectedTable("Location"))
+		#if($subsublocations.size() == 0)
+			#if($foreach.count == 1)
+				#set($parenttoupdate = $sublocation.getSingleKeyValue())
+				<br><br>$sublocation.get("Name")<br>
+			#else
+				$sublocation.store("Parent", $parenttoupdate)<br>
+			#end
+		#end
+	#end
+#end

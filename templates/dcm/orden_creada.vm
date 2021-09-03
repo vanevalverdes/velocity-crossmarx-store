@@ -1,0 +1,219 @@
+$document.surround('/templates/dcm/surround.vm')
+
+##getCart()
+
+## Quitar cart
+
+## Agregar query con request
+
+## Verificar que la orden esté paga
+
+## Poner mensaje de error sino se encuentra o no está paga
+
+## Mover el agregado de status a antes
+		
+
+
+#set($orderId = $request.get('order'))
+#if($orderId == "${orderCart}")
+	#set($idAux = $request.get('id'))
+	#set($orderId = $session.getRecord('log', $idAux).get('Order'))
+#end
+
+#try($coso)
+	#if($orderId)
+		#set($cart = $session.getRecord("Order", $orderId))
+		#set($orderlines = $cart.getConnectedTable('Orderline'))
+	#end
+	
+	#set($return = $orderlines.getSum("Total"))
+#end
+
+
+## Guarda el Cart en el log anterior ---- Desactivado por Vane 25 Enero 2021
+#*
+#set($log = $session.getRecord('log', $orderId))
+#set($void = $log.store('Order', $cart.get('Id')))
+#set($void = $log.save())
+*#
+        <style>
+            #page-title {
+                top: -120px;
+                margin-bottom: -124px;
+                position: relative;
+                padding: 220px 0 220px 0;
+            }
+
+            section {
+                padding: 30px 0;
+                padding-bottom: 30px;
+                position: relative;
+                width: 100%;
+                overflow: hidden;
+                z-index: 1;
+                background-color: #ffffff;
+            }
+        </style>
+        <section id="page-title" class="text-light"
+            style="background-image:url(/templates/dcm/img/Header_Resumen-Confirmacion_Orden.png); background-position:center; background-size: cover;">
+            <div class="container">
+                <div class="breadcrumb">
+                    <ul>
+                    </ul>
+                </div>
+                <div class="page-title">
+                </div>
+            </div>
+        </section>
+
+        <!-- CONFIRMATION -->
+        <section id="shop-checkout">
+            <div class="container">
+            	#if($cart.get('Status') == 4)
+                <div class="shop-cart">
+                    <div class="heading-text text-left heading-section">
+                        ##<h2>ORDEN # $cart.get('Id')</h2>
+                        <h2>ORDEN # $!cart.get('Id')</h2>
+                        <div class="container">
+                            Su orden # $!cart.get('Id') ha sido creada con éxito.
+                            <br>
+                     #*       <br>
+                            Datos para pago por transferencia electrónica:
+                            <br>
+                            <br>
+                            <ul class="m-l-20">
+                                <li>NOMBRE: ISTRIBUIDORA CAFÉ MONTAÑA S.A.</li>
+                                <li>ENTIDAD BANCARIA: BAC CREDOMATIC</li>
+                                <li>CÉDULA JURÍDICA: 3-101-000000</li>
+                                <li>CUENTA IBAN: CR00000000000000000000</li>
+                                <li>ENVIAR COMPROBANTE: <a href="#">pagos@dcm.cr</a></li>
+                            </ul> *#
+                        </div>
+                    </div>
+                    #if($session.getVariable('test'))
+					<div class="row">
+						<div class="alert alert-danger" role="alert">
+						  Está en modo test
+						</div>
+					</div>
+					$session.removeVariable('test')
+                    #end
+                    <div class="row">
+                        <div class="col-lg-6">
+                            <div class="table table-responsive table table-bordered table-responsive">
+                                <table class="table m-b-0">
+                                    <thead>
+                                        <tr>
+                                            <th class="cart-product-name" style="font-size: xx-large;">Producto</th>
+                                            <th class="cart-product-quantity" style="font-size: xx-large;">Cantidad</th>
+                                            <th class="cart-product-subtotal" style="font-size: xx-large;">Total</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                    	#foreach($orderline in $orderlines)
+                                        <tr>
+                                            <td class="cart-product-description">
+                                                $orderline.get("Product.Name")
+                                            </td>
+                                            <td class="cart-product-quantity">
+                                                $orderline.get('Quantity')
+                                            </td>
+                                            <td class="cart-product-subtotal">
+                                                 <span class="amount">₡ $orderline.getLabel('Subtotal')</span>
+                                            </td>
+                                        </tr>
+                                		#end
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                        <div class="col-lg-6">
+                            <div class="row">
+                                <div class="col-lg-12">
+                                    <div class="table-responsive">
+                                        <h4>RESUMEN DE COMPRA</h4>
+                                        <table class="table">
+                                            <tbody>
+                                                <tr>
+                                                    <td class="cart-product-name">
+                                                        <strong>Subtotal</strong>
+                                                    </td>
+                                                    <td class="cart-product-name text-right">
+                                                        <span class="amount">₡ $return.format("en")</span>
+                                                    </td>
+                                                </tr>
+                                                <tr>
+                                                    <td class="cart-product-name">
+                                                        <strong>Envío</strong>
+                                                    </td>
+                                                    <td class="cart-product-name  text-right">
+                                                        <span class="amount">₡ $!cart.getLabel("Shipping Cost") </span>
+                                                    </td>
+                                                </tr>
+                                                <tr>
+                                                    <td class="cart-product-name">
+                                                        <strong>Total</strong>
+                                                    </td>
+                                                    <td class="cart-product-name text-right">
+                                                        <span
+                                                            class="amount color lead"><strong>₡ $return.add($!cart.get("Shipping Cost")).format("en")</strong> </span>
+                                                    </td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+	                #*
+		                #if($session.getVariable('sendEmail'))
+						#set($titletext = "Confirmación de Orden - Distribuidora Café Montaña")
+						#set($contenttext = "<p>Gracias por su compra con Distribuidora Café Montaña. Adjuntamos los datos de su compra como confirmación:</p>
+						<p>Número de Orden: <strong>$cart.getSingleKeyValue()</strong></p>
+						<p>Items Comprados</strong></p>
+						<table>
+						#foreach($orderline in $orderlines)
+							<tr><td style='padding-top: 6px; padding-bottom: 6px; padding-left: 20px; padding-right: 20px;'>$!orderline.get('Quantity') $!orderline.get('Product.Name')</td><td style='padding-top: 6px; padding-bottom: 6px; padding-left: 20px; padding-right: 20px;'> ₡ $!orderline.getLabel('Subtotal')</td></p>
+						#end
+						#if($cart.get('shipping cost').getCents() > 0)
+							<tr><td style='padding-top: 6px; padding-bottom: 6px; padding-left: 20px; padding-right: 20px;'>Envío</td><td style='padding-top: 6px; padding-bottom: 6px; padding-left: 20px; padding-right: 20px;'> ₡ $cart.getLabel('Shipping Cost')</td></p>
+						#end	
+						<tr><td style='padding-top: 6px; padding-bottom: 6px; padding-left: 20px; padding-right: 20px;'>Impuestos</td><td style='padding-top: 6px; padding-bottom: 6px; padding-left: 20px; padding-right: 20px;'> ₡ $orderlines.getSum('Taxes').format('en')</td></p>
+						<tr><td style='padding-top: 6px; padding-bottom: 6px; padding-left: 20px; padding-right: 20px;'>Total</td><td style='padding-top: 6px; padding-bottom: 6px; padding-left: 20px; padding-right: 20px;'> ₡ $cart.getLabel('Total')</td></p>
+						</table>
+						<strong>Dirección de envío:</strong> $!cart.get('Full Name') $!cart.get('Address')")
+						##$application.email("info@dcm.cr", "$cart.getForeignRecord('User').get('Email')", "$titletext", "#parse('/templates/dcm/emailtemplate.vm')")	
+						##$application.email("info@dcm.cr","asistentemercadeo@dcm.cr, cbustos@dcm.cr, asistentegv@dcm.cr, asistentev@dcm.cr", "$titletext", "#parse('/templates/dcm/emailtemplate.vm')")	
+						*#
+
+						##end
+                #elseif($cart.get('Status') == 1)
+                <div class="shop-cart">
+                    <div class="heading-text text-left heading-section">
+                        ##<h2>ORDEN # $cart.get('Id')</h2>
+                        <h2>ORDEN # $!cart.get('Id')</h2>
+                        <div class="container">
+                            La orden # $!cart.get('Id') aun no ha sido pagada.
+                            <br>
+                     #*       <br>
+                            Datos para pago por transferencia electrónica:
+                            <br>
+                            <br>
+                            <ul class="m-l-20">
+                                <li>NOMBRE: ISTRIBUIDORA CAFÉ MONTAÑA S.A.</li>
+                                <li>ENTIDAD BANCARIA: BAC CREDOMATIC</li>
+                                <li>CÉDULA JURÍDICA: 3-101-000000</li>
+                                <li>CUENTA IBAN: CR00000000000000000000</li>
+                                <li>ENVIAR COMPROBANTE: <a href="#">pagos@dcm.cr</a></li>
+                            </ul> *#
+                        </div>
+                    </div>
+                #end
+            </div>
+        </section>
+
+        <!-- END CONFIRMATION -->
+		

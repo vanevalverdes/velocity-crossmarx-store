@@ -1,0 +1,45 @@
+<div class="ajax-quick-view">
+	<style>
+	.footer-content, #header, #topbar, #page-title{
+		display: none;
+	}
+	</style>
+	<div class="quick-view-content">
+		$!document.getContent()
+		<script>
+		
+		
+		$(document).ready(function() {
+		  $('.plus').click(function() {
+		  	var currentValue = $(this).parent().find(".qty").val();
+		    currentValue++;
+		    $(this).parent().find(".qty").val(currentValue);
+		  });
+		  $('.minus').click(function() {
+      	    var currentValue = $(this).parent().find(".qty").val();
+		    if (currentValue > 0) {
+		      currentValue--;
+			   $(this).parent().find(".qty").val(currentValue);
+		    }
+		  });
+		});	
+		$(".addtocart").on("click", function(){
+		    var product = "$product.getSingleKeyValue()";
+		    var amount = $(".qty").val();
+		    var url = "/carrito/?amount=" + amount + "&product=" + product;
+		    if(amount != 0){
+			window.location.replace(url);
+			}
+		})
+		$(".addtocartandpay").on("click", function(){
+		    var product = "$product.getSingleKeyValue()";
+		    var amount = $(".qty").val();
+		    var url = "/carrito/?amount=" + amount + "&product=" + product + "&payment=true";
+		    if(amount != 0){
+			window.location.replace(url);
+			}
+		})
+	</script>
+	</div>
+
+</div>

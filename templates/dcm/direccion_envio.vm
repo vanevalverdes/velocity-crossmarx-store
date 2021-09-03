@@ -1,0 +1,196 @@
+#if($request.get('deliveryname'))
+#set($errors = [])
+#getCart()
+#logCart()
+
+
+
+#set($shippingaddress = $request.get('shippingaddress'))
+	#if(!$shippingaddress) #set($void = $errors.add('Debe llenar la dirección completa para continuar.')) #end
+#set($shippingprovince = $request.get('shippingprovince'))
+	#if(!$shippingprovince) #set($void = $errors.add('Debe llenar la provincia para continuar.')) #end
+#set($shippingdistrict = $request.get('shippingdistrict'))
+	#if(!$shippingdistrict) #set($void = $errors.add('Debe llenar el distrito para continuar.')) #end
+
+
+#set($shippingcounty = $request.get('shippingcounty'))
+	#if(!$shippingcounty) #set($void = $errors.add('Debe llenar el cantón para continuar.')) #end
+
+#set($shippingphone = $request.get('shippingphone'))
+	#if(!$shippingphone) #set($void = $errors.add('Debe llenar el campo de teléfono para continuar.')) #end
+
+#set($deliveryname = $request.get('deliveryname'))
+	#if(!$deliveryname) #set($void = $errors.add('Debe llenar el campo de nombre completo para continuar.')) #end
+
+#if($errors.size() == 0)
+	$cart.putVoid("Address", "$request.get('shippingphone') | $request.get('shippingaddress') | $request.get('shippingaddress2')")
+	$cart.putVoid("Province", $request.get('shippingprovince'))
+	$cart.putVoid("County", $request.get('shippingcounty'))
+	$cart.putVoid("District", $request.get('shippingdistrict'))
+	$cart.putVoid("Full Name", $request.get('deliveryname'))
+#end
+
+#if($errors.size() == 0)
+	$session.getReplaceScript('/confirmar-pagar')
+#end
+#end
+$document.surround('/templates/dcm/surround.vm')
+#set($lastOrder = $session.getTable('order').getFilteredTable('User', $session.getVariable('uid')).getFilteredTableIsNotNull('Province').getLastRecord())
+#if($lastOrder)
+	#set($province = $lastOrder.get('Province'))
+	#set($county = $lastOrder.get('County'))
+	#set($district = $lastOrder.get('District'))
+	#set($name = $lastOrder.get('Full Name'))
+	#set($fullAddress = $lastOrder.getLabel('Address').split(" | "))
+	#set($phone = $fullAddress.get(0))
+	#set($address = $fullAddress.get(2))
+#end
+        <style>
+            #page-title {
+                top: -120px;
+                margin-bottom: -124px;
+                position: relative;
+                padding: 220px 0 220px 0;
+            }
+
+            section {
+                padding: 30px 0;
+                padding-bottom: 30px;
+                position: relative;
+                width: 100%;
+                overflow: hidden;
+                z-index: 1;
+                background-color: #ffffff;
+            }
+        </style>
+        <section id="page-title" class="text-light"
+            style="background-image:url(/templates/dcm/img/HeaderComprar2.jpg); background-position:center; background-size: cover;">
+            <div class="container">
+                <div class="breadcrumb">
+                    <ul>
+                    </ul>
+                </div>
+                <div class="page-title">
+                </div>
+            </div>
+        </section>
+        <!-- Create account -->
+        <section>
+            <div class="container">
+                <div class="row m-b-20">
+                    <div class="col-xs-6 col-lg-6 p-t-10 m-b-20">
+                        <div class="heading-text text-left heading-section">
+                            <h2>DIRECCIÓN DE ENVÍO</h2>
+                        </div>
+                    </div>
+					#if($errors.size() == 0)
+						
+						<div class="alert alert-success">
+							Su dirección de envío ha sido guardada exitosamente. Será redirigida al checkout.
+						</div>
+					#elseif($errors.size() > 0)
+						<div class="alert alert-warning">
+							#foreach($error in $errors)
+								$error
+							#end
+						</div>
+					#end                    
+                </div>
+                <form class="">
+                <div class="form-row">
+                    <div class="form-group col-md-6">
+                        <select name="shippingprovince" class="shippingprovince" required>
+                            <option value="">Seleccionar</option>
+                            <option #if($province == "02") selected #end value="02">Alajuela</option>
+                            <option #if($province == "03") selected #end value="03">Cartago</option>
+                            <option #if($province == "05") selected #end value="05">Guanacaste</option>
+                            <option #if($province == "04") selected #end value="04">Heredia</option>
+                            <option #if($province == "07") selected #end value="07">Limón</option>
+                            <option #if($province == "06") selected #end value="06">Puntarenas</option>
+                            <option #if($province == "01") selected #end value="01">San José</option>
+                        </select>
+                    </div>
+                    <div class="form-group col-md-6">
+                        <select name="shippingcounty" class="shippingcounty" required>
+                            <option value="">Cantón </option>
+                            #foreach($location in $session.getTable("Location").getFilteredTable("Parent", "is null"))
+	                            #foreach($subloc in $location.getConnectedTable("Location"))
+	                            	<option #if($county == "$subloc.get('Id')") data-preload="true" selected="selected" #end class="prov prov-$location.get('Zip Code')" value="$subloc.get('Id')">$subloc.get("Name")</option>
+	                            #end
+							#end
+                        </select>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group col-md-6">
+                        <select name="shippingdistrict" class="shippingdistrict" required>
+                            <option value="">Distrito</option>
+                            #foreach($location in $session.getTable("Location").getFilteredTable("Parent", "is null"))
+	                            #foreach($subloc in $location.getConnectedTable("Location"))
+	 	                            #foreach($subsubloc in $subloc.getConnectedTable("Location"))
+	                            		<option #if($district == "$subsubloc.get('Id')") data-preload="true" selected="selected" #end class="county county-$subloc.get('Id')" value="$subsubloc.get('Id')" style="display: none;">$subsubloc.get("Name") #if($subsubloc.get("Shipping Amount")) &nbsp;&nbsp;   - &nbsp;&nbsp;₡ $subsubloc.getLabel("Shipping Amount") de Envío #end</option>
+	                            	#end                           	
+	                            #end
+							#end
+                        </select>
+                    </div>
+                    <div class="form-group col-md-6">
+                        <input type="text" class="form-control" name="shippingaddress" placeholder="Dirección Exacta" required #if($address) value="${address}" #end>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group col-md-6">
+                        <input type="text" class="form-control" name="shippingaddress2" placeholder="Otras Señas" required>
+                    </div>
+                    <div class="form-group col-md-6">
+                        <input type="phone" class="form-control" name="shippingphone" placeholder="Teléfono" required #if($phone) value="$phone" #end>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group col-md-6">
+                        <input type="text" class="form-control" name="deliveryname" placeholder="Nombre de la persona que recibe el pedido" required #if($name) value="${name}" #end>
+                    </div>
+                    <div class="form-group col-md-6">
+                        <button class="btn btn-block" type="submit" style="background-color: #2A795C;">CONFIRMAR DIRECCIÓN</button>
+                    </div>
+                </div>
+                </form>
+            </div>
+        </section>
+ 
+        <!-- end: Create account -->
+  	  #parse("/templates/shippingInfoSection.vm")
+      #define($extrapageplugins)
+		$(".shippingprovince").change(function() {
+		  var val = $(this).val();
+		  var classname = ".prov-" + val;
+			$(".prov").hide();
+			$(".prov").attr("hidden", "");
+		  $(classname).show();
+		  $(classname).removeAttr("hidden");
+		  if($('.shippingcounty option:selected').data('preload')) {
+		  $('.shippingcounty option:selected').removeData('preload');
+		  } else{
+		  $('.shippingcounty option:selected').removeAttr('selected');
+		  $('.shippingdistrict option:selected').removeAttr('selected');
+		 	$('.shippingcounty').val('');
+		 	$('.shippingdistrict').val('');
+		  };
+		  
+		}).change();
+		$(".shippingcounty").change(function() {
+		  var val = $(this).val();
+		  var classname = ".county-" + val;
+			$(".county").hide();
+			$(".county").attr("hidden", "");
+		  $(classname).show();
+		  $(classname).removeAttr("hidden");
+		  console.log(classname);
+		  if($('.shippingdistrict option:selected').data('preload')) {
+		  $('.shippingcounty option:selected').removeData('preload');
+		  } else{
+		  $('.shippingdistrict option:selected').removeAttr('selected');
+		 	$('.shippingdistrict').val('');
+		 };
+		}).change();       
+       #end

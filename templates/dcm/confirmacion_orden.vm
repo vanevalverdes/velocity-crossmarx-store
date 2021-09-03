@@ -1,0 +1,280 @@
+$document.surround('/templates/dcm/surround.vm')
+#checkloginstate
+$session.removeVariable('test')
+
+#if($request.get('test'))
+	#set($void = $session.putVariable('test', true))
+#end
+#if($request.get('forced'))
+	#set($void = $session.putVariable('forced', true))
+#end
+
+#if($request.get('order'))
+	#set($record = $session.getRecord('Order', $request.get('order')))
+	#if($record.get('Status') == 1)
+		#set($cart = $record)
+		#set($orderlines = $cart.getConnectedTable('Orderline'))
+	$session.putVariable('cart', $cart)
+	$session.putVariable('orderlines', $orderlines)
+	#else
+		#set($paidOrder = true)
+	#end
+#end	
+#if(!$cart)
+	#set($save = true)
+	#getCart()
+#end
+#*
+#set($void = $cart.calculate("Shipping Cost"))
+#set($void = $cart.calculate("Taxes"))
+#set($void = $cart.calculate("Total"))
+*#
+
+#set($subtotal = $orderlines.getSum("Total"))
+
+#set($return = $orderlines.getSum("Total").add($cart.get('Shipping Cost')))
+	#set($errors = [])
+#if($request.get("cardnumber"))
+
+	#set($cardnumber = $request.get("cardnumber"))
+	#set($nameoncard = $request.get("nameoncard"))
+	#set($expirationyear = $request.get("expirationyear"))
+	#set($expirationmonth = $request.get("expirationmonth"))
+	#set($date = "${expirationmonth}${expirationyear}")
+	#set($cvv =  $request.get("cvv"))
+	###if($cvv) $session.getReplaceScript("/orden-creada")#end
+	
+	#set($subs = $cardnumber.substring(0,2))
+	#set($money = $return)
+	#if($request.get('amex') == "on" || $subs == "34" || $subs == "37")
+		#parse('/templates/dcm/payment/xml.vm')
+	#else
+		#parse('/templates/dcm/payment/3dxml.vm')  
+	#end
+#elseif($request.get("tokenid"))
+	#if($request.get('amex'))
+		#parse('/templates/dcm/payment/xml.vm')
+	#else
+		#parse('/templates/dcm/payment/3dxml.vm')  
+	#end
+#end
+		#if($request.get('error'))#set($void = $errors.add('Transaccion denegada. Por favor verifique los datos o intente con otra tarjeta.'))#end
+		#if($paidOrder)#set($void = $errors.add('Esta Orden ya fue pagada. Si cree que existe un error, contacte a soporte.'))#end
+        <style>
+            #page-title {
+                top: -120px;
+                margin-bottom: -124px;
+                position: relative;
+                padding: 220px 0 220px 0;
+            }
+
+            section {
+                padding: 30px 0;
+                padding-bottom: 30px;
+                position: relative;
+                width: 100%;
+                overflow: hidden;
+                z-index: 1;
+                background-color: #ffffff;
+            }
+        </style>
+        <section id="page-title" class="text-light"
+            style="background-image:url(/templates/dcm/img/Header_Resumen-Confirmacion_Orden.png); background-position:center; background-size: cover;">
+            <div class="container">
+                <div class="breadcrumb">
+                    <ul>
+                    </ul>
+                </div>
+                <div class="page-title">
+                </div>
+            </div>
+        </section>
+
+        <!-- CONFIRMATION -->
+        <section id="shop-checkout">
+            <div class="container">
+                <div class="shop-cart">
+                    <div class="heading-text text-left heading-section">
+                        <h2>CONFIRMACIÓN DE ORDEN</h2>
+                    </div>
+                    <div class="row">
+                    	#if($errors.size() > 0)
+                    	<div class="alert alert-warning" role="alert">
+						  #foreach($error in $errors)
+						  	$error<br>
+						  #end
+						</div>
+						#end
+						
+					</div>
+					<div class="row">
+						<div class="alert alert-info" role="alert">
+						  Por favor, no recargue esta página pues podría duplicar su orden.
+						</div>
+					</div>
+					#if($session.getVariable('test'))
+					<div class="row">
+						<div class="alert alert-danger" role="alert">
+						  Está en modo test
+						</div>
+					</div>
+                    #end
+					#if($session.getVariable('forced'))
+					<div class="row">
+						<div class="alert alert-danger" role="alert">
+						  Está en modo forced
+						</div>
+					</div>
+                    #end
+                    #if(!$paidOrder)
+                    <div class="row">
+                    	
+                        <div class="col-lg-6">
+                            <div class="table table-responsive table table-bordered table-responsive">
+                                <table class="table m-b-0">
+                                    <thead>
+                                        <tr>
+                                            <th class="cart-product-name" style="font-size: xx-large;">Producto</th>
+                                            <th class="cart-product-quantity" style="font-size: xx-large;">Cantidad</th>
+                                            <th class="cart-product-subtotal" style="font-size: xx-large;">Total</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                    
+                                    	#foreach($orderline in $orderlines)
+                                        <tr>
+                                            <td class="cart-product-description">
+                                                $orderline.get("Product.Name")
+                                            </td>
+                                            <td class="cart-product-quantity">
+                                                <span class="quantity">$orderline.get("Quantity")</span>
+                                            </td>
+                                            <td class="cart-product-subtotal">
+                                                <span class="amount">₡ $orderline.getLabel("Total")</span>
+                                            </td>
+                                        </tr>
+										#end
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                        <div class="col-lg-6">
+                            <div class="row">
+                                <div class="col-lg-12">
+                                    <div class="table-responsive">
+                                        <h4>RESUMEN DE COMPRA</h4>
+                                        <table class="table">
+                                            <tbody>
+                                                <tr>
+                                                    <td class="cart-product-name">
+                                                        <strong>Subtotal</strong>
+                                                    </td>
+                                                    <td class="cart-product-name text-right">
+                                                        <span class="amount">₡ $subtotal.format("en")</span>
+                                                    </td>
+                                                </tr>
+                                                <tr>
+                                                    <td class="cart-product-name">
+                                                        <strong>Envío</strong>
+                                                    </td>
+                                                    <td class="cart-product-name  text-right">
+                                                        <span class="amount">₡ $!cart.getLabel("Shipping Cost")</span>
+                                                    </td>
+                                                </tr>
+                                                <tr>
+                                                    <td class="cart-product-name">
+                                                        <strong>Total</strong>
+                                                    </td>
+                                                    <td class="cart-product-name text-right">
+                                                        <span
+                                                            class="amount color lead"><strong>₡ $return.format("en")</strong></span>
+                                                    </td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                                <div class="col-lg-12">
+                                    <h4 class="upper">Detalles de pago</h4>
+
+                                    <form method="POST">
+
+									<div class="row">
+		
+									   <div class="col-lg-12 form-group">
+									      <label class="sr-only">Nombre de Tarjetahabiente</label>
+									      <input type="text" class="form-control" placeholder="Nombre de Tarjetahabiente" value="" name="nameoncard">
+									   </div>
+									   <div class="col-lg-12 form-group">
+									      <label class="sr-only">Número de Tarjeta</label>
+									      <input type="text" class="form-control" placeholder="Número de Tarjeta" value="" name="cardnumber">
+									   </div>
+									   <div class="col-lg-3 form-group">
+									      <label class="sr-only">Mes Expiración</label>
+										  <select name="expirationmonth">
+										  	 <option value="01">01</option>
+										  	 <option value="02">02</option>
+										  	 <option value="03">03</option>
+										  	 <option value="04">04</option>
+										  	 <option value="05">05</option>
+										  	 <option value="06">06</option>
+										  	 <option value="07">07</option>
+										  	 <option value="08">08</option>
+										  	 <option value="09">09</option>
+										  	 <option value="10">10</option>
+										  	 <option value="11">11</option>
+										  	 <option value="12">12</option>
+										  </select>
+									   </div>
+									   <div class="col-lg-3 form-group">
+									      <label class="sr-only">Año Expiración</label>
+										  <select  name="expirationyear">
+										  	#foreach($month in [20..30])
+										  	 <option value="$month">$month</option>
+										  	#end
+										  </select>
+									   </div>
+									   <div class="col-lg-3 form-group">
+									      <label class="sr-only">CVV</label>
+									      <input type="text" class="form-control" placeholder="CVV" value="" name="cvv">
+									   </div>									   
+									</div> 
+									<div class="form-check mb-3">
+										    <input type="checkbox" class="form-check-input" name="amex" id="amex">
+										    <label class="form-check-label" for="amex">Mi tarjeta es American Express</label>
+										</div>
+                                </div>
+                                
+                                <div class="col-lg-12">
+                                    <button type="submit" href="#" class="btn btn-block col-lg-12 float-right"
+                                        style="background-color: #2A795C;"><span>CONFIRMAR ORDEN</span></button>
+                                </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                    #end
+                </div>
+            </div>
+    </div>
+    <!-- END CONFIRMATION -->
+    		#if($savedCart && !$session.getVariable('sendEmail') && $orderlines.size() > 0)
+    			#set($titletext = "Nueva Orden - Aguardando pago - Distribuidora Café Montaña")
+				#set($contenttext = "<p>Un usuario ha creado una orden. Los datos se envían a continuación:</p>
+				<p>Número de Orden: <strong>$!cart.getSingleKeyValue()</strong></p>
+				<p>Items Comprados</strong></p>
+				<table>
+				#foreach($orderline in $orderlines)
+					<tr><td style='padding-top: 6px; padding-bottom: 6px; padding-left: 20px; padding-right: 20px;'>$!orderline.get('Quantity') $!orderline.get('Product.Name')</td><td style='padding-top: 6px; padding-bottom: 6px; padding-left: 20px; padding-right: 20px;'> ₡ $!orderline.getLabel('Subtotal')</td></p>
+				#end
+				#if($cart.get('shipping cost').getCents() > 0)
+					<tr><td style='padding-top: 6px; padding-bottom: 6px; padding-left: 20px; padding-right: 20px;'>Envío</td><td style='padding-top: 6px; padding-bottom: 6px; padding-left: 20px; padding-right: 20px;'> ₡ $cart.getLabel('Shipping Cost')</td></p>
+				#end	
+				<tr><td style='padding-top: 6px; padding-bottom: 6px; padding-left: 20px; padding-right: 20px;'>Impuestos</td><td style='padding-top: 6px; padding-bottom: 6px; padding-left: 20px; padding-right: 20px;'> ₡ $orderlines.getSum('Taxes').format('en')</td></p>
+				<tr><td style='padding-top: 6px; padding-bottom: 6px; padding-left: 20px; padding-right: 20px;'>Total</td><td style='padding-top: 6px; padding-bottom: 6px; padding-left: 20px; padding-right: 20px;'> ₡ $cart.getLabel('Total')</td></p>
+				</table>
+				<strong>Dirección de envío:</strong> $!cart.get('Full Name') $!cart.get('Address')")
+				##$application.email("info@dcm.cr", "$cart.getForeignRecord('User').get('Email')", "$titletext", "#parse('/templates/dcm/emailtemplate.vm')")	
+				$application.email("info@dcm.cr", "asistentegv@dcm.cr, asistentev@dcm.cr, pnigroh@gmail.com", "$titletext", "#parse('/templates/dcm/emailtemplate.vm')")	
+				$session.putVariable('sendEmail', true)
+			#end

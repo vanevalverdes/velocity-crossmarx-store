@@ -1,0 +1,181 @@
+#set($forced = $session.getVariable('forced'))
+#if(!$request.get("tokenid"))
+Procesando...
+	#if($forced)
+		#set($money = $engine.newMoney(10000))
+	#end
+	#set($amountM = $money.getCents().toString())
+	#set($length = $amountM.length())
+	#set($dif = (12 - $length))
+	
+	#set($ceros = "")
+	#foreach($i in [1..$dif])
+		#set($ceros = "$!{ceros}0")
+	#end
+	#set($cerosFinal = "$!{ceros}$amountM")
+	
+#try($intentar)
+	#set($newResponse = $session.newRecord('log'))
+	#set($void = $newResponse.store('Order', $cart.get('Id')))
+	#set($void = $newResponse.store('Card Number', $cardnumber))
+	#set($void = $newResponse.store('Date', $date))
+	#set($void = $newResponse.store('CVV', $cvv))
+	#set($void = $newResponse.store('Amount', $cerosFinal))
+	#set($void = $newResponse.save())
+#end
+
+
+
+	#set($orderId = "$newResponse.get('Id')")
+	#set($amount = "$cerosFinal")
+	#set($currency = "188")
+	#set($card = "$cardnumber")
+	#set($date = "$date")
+	#set($cvv = "$cvv")
+	
+	#*
+	#set($orderId = "12351")
+	#set($amount = "$cerosFinal")
+	#set($currency = "188")
+	#set($card = "4111111111111111")
+	#set($date = "0130")
+	#set($cvv = "123")
+	*#
+
+	##set($string = "jwge77SE88802602464748"+"$orderId"+"$amount"+"$currency")
+	#set($string = "mOo8X8Ld33303086464748"+"$orderId"+"$amount"+"$currency")
+	##String: a1B23c1234567890464748FACTEST01000000001200840<br>
+	##set($string = "a1B23c1234567890464748FACTEST01000000001200840")
+	#set($sha1 = $engine.getSHA1($string))
+	##Result GET SHA1: $sha1<br>
+	#set($map = $engine.newMap())
+	$map.putVoid('order', $orderId) 
+	$map.putVoid('amount', $amount) 
+	$map.putVoid('currency', $currency) 
+	$map.putVoid('card', $card) 
+	$map.putVoid('date', $date) 
+	$map.putVoid('cvv', $cvv) 
+	$map.putVoid('nameoncard', $nameoncard) 
+	$map.putVoid('orderCart', $cart.get('Id'))
+
+	#set($logMap = $session.newRecord('log'))
+	#set($void = $logMap.store('JSON', $map))
+	#set($void = $logMap.save())
+
+	$session.putVariable('map', $map)
+	
+	
+	<script>
+	function hexToBase64(hexstring) {
+	    return btoa(hexstring.match(/\w{2}/g).map(function(a) {
+	        return String.fromCharCode(parseInt(a, 16));
+	    }).join(""));
+	}
+	
+	var answer = hexToBase64("$sha1");
+	var url = "/templates/dcm/payment/3dxml.vm?tokenid=" + answer;
+	// Simulate an HTTP redirect:
+	window.location.replace(url);
+	</script>
+
+#else
+Espere unos segundos...
+#set($map = $session.getVariable('map'))
+
+
+#set($orderId = $map.get('order'))
+#set($amount = $map.get('amount'))
+#set($currency = $map.get('currency'))
+#set($card = $map.get('card'))
+#set($date = $map.get('date'))
+#set($cvv = $map.get('cvv'))
+#set($nameoncard = $map.get('nameoncard'))
+#set($orderCart = $map.get('orderCart'))
+
+	#set($logMap = $session.newRecord('log'))
+	#set($void = $logMap.store('JSON', $map))
+	#set($void = $logMap.save())
+
+##$session.removeVariable('map')
+##set($signature = $engine.encodeStringToBASE64("$sha1"))
+##Result Encode String to BASE64: $signature 
+
+#define($xml)
+<?xml version='1.0' encoding='utf-8'?>
+<Authorize3DSRequest xmlns:i='http://www.w3.org/2001/XMLSchema-instance' xmlns='http://schemas.firstatlanticcommerce.com/gateway/data'>
+	<CardDetails>
+		<CardCVV2>$cvv</CardCVV2>
+		<CardExpiryDate>$date</CardExpiryDate>
+		<CardNumber>$card</CardNumber>
+		<Installments>0</Installments>
+	</CardDetails>
+	<MerchantResponseURL>https://dcm.cr/templates/dcm/payment/3dxmlResponse.vm</MerchantResponseURL>
+	<TransactionDetails>
+		<AcquirerId>464748</AcquirerId>
+		<Amount>$amount</Amount>
+		<Currency>$currency</Currency>
+		<CurrencyExponent>2</CurrencyExponent>
+		<MerchantId>33303086</MerchantId>
+		<OrderNumber>$orderId</OrderNumber>
+		<Signature>$request.get('tokenid')</Signature>
+		<SignatureMethod>SHA1</SignatureMethod>
+		<TransactionCode>0</TransactionCode>
+		<CustomerReference>DCM</CustomerReference>
+	</TransactionDetails>
+</Authorize3DSRequest>
+#end
+
+#set($soapMessageXML = "$xml")
+
+#set($request = $engine.newServiceMessage("text/plain"))
+$request.setRootElement($engine.newValueElement($soapMessageXML)) 
+##set($client = $engine.newServiceClient("https://ecm.firstatlanticcommerce.com/PGServiceXML/Authorize3DS"))
+#set($client = $engine.newServiceClient("https://marlin.firstatlanticcommerce.com/PGServiceXML/Authorize3DS"))
+$client.setAction("POST")
+$client.setContentType("application/xml")
+#set($void = $client.invoke($request))
+
+#set($responseparsed = $engine.parseElement($client.getResponse(), "application/xml"))
+<br>
+<div style="color:#fff;">
+$responseparsed
+</div>
+#*
+## Auth Code
+	#set($results = $responseparsed.getMember('CreditCardTransactionResults'))
+	#set($authCode = $results.getMember('AuthCode'))
+	#set($authCodeValue = $authCode.getValue())
+
+## Result Code
+
+	#set($resultsCode = $results.getMember('ResponseCode'))
+	#set($resultsCodeValue = $resultsCode.getValue())
+
+	#set($record = $session.getRecord('log', $orderId))
+	#set($void = $record.store('JSON', $client.getResponse()))
+	#set($void = $record.store('Card Number', $card))
+	#set($void = $record.store('Date', $date))
+	#set($void = $record.store('CVV', $cvv))
+	#set($void = $record.store('Auth', $authCodeValue))
+	#set($void = $record.store('Amount', $amount))
+	#set($void = $record.save())
+
+
+	#if($resultsCodeValue == 1)
+		#set($void =$cart.save())
+		#set($void = $record.store('Order', $cart.get('Id')))
+		#set($void = $record.save())
+		
+		#parse('/templates/dcm/payment/capture.vm')
+	
+		$session.getReplaceScript('/templates/dcm/orden_creada.vm')
+		
+	#elseif($resultsCodeValue == 2)
+		#set($void = $errors.add('Transaccion denegada. Por favor intente con otra tarjeta'))
+	#elseif($resultsCodeValue == 3)
+		#set($void = $errors.add('Transaccion denegada. Por favor intente con otra tarjeta'))
+	#else
+		#set($void = $errors.add('Transaccion denegada. Por favor intente con otra tarjeta'))
+	#end
+*#
+#end

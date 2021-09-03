@@ -1,0 +1,36 @@
+<section>
+            <div class="container-fluid" style="background-color: #2A795C;">
+                <div class="container">
+                    <div class="row p-t-80" style="background-color: #2A795C;">
+                        <div class="col-lg-4">
+                            <div class="icon-box small clean">
+                                <div class="icon">
+                                    <i class="fa fa-shopping-cart" style="color: white;"></i>
+                                </div>
+                                <h3 style="color: white;">Monto mínimo de<br>Compra ₡5.000,00</h3>
+                                <p style="color: white;"><a href="/faqs" class="text-light">Ver nuestra sección de Preguntas Frecuentes.</a>
+                                </p>
+                            </div>
+                        </div>
+                        <div class="col-lg-4">
+                            <div class="icon-box small clean">
+                                <div class="icon">
+                                    <i class="fa fa-truck" style="color: white;"></i>
+                                </div>
+                                <h3 style="color: white;">Envío a todo Costa Rica.</h3>
+                                <p style="color: white;"><a href="/politica-envios" class="text-light">Ver nuestra Política de Envío de productos.</a></p>
+                            </div>
+                        </div>
+                        <div class="col-lg-4">
+                            <div class="icon-box effect small clean">
+                                <div class="icon">
+                                    <i class="icon-repeat" style="color: white;"></i>
+                                </div>
+                                <h3 style="color: white;">Cambios o devoluciones.</h3>
+                                <p style="color: white;"><a href="/politica-devoluciones" class="text-light">Ver nuestra política de devoluciones.</a></p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>

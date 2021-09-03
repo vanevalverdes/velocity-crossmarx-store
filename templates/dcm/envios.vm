@@ -1,0 +1,29 @@
+$document.surround("/templates/dcm/surround.vm")
+
+<section id="page-title" class="text-light" style="background-image:url(/templates/dcm/img/Header_Resumen-Confirmacion_Orden.png); background-size: cover; background-position: center bottom;">
+<div class="container">
+<div class="breadcrumb">
+<ul>
+
+</ul>
+</div>
+<div class="page-title">
+
+</div>
+</div>
+</section>
+<style>
+h3{
+	font-weight: bold;
+}
+strong {
+    font-weight: 600;
+    color: #2a795c;
+    font-size: 18px;
+}
+</style>
+        <!-- SHOP PRODUCT PAGE -->
+<div class="container">
+<h3 style="padding: 30px 0 15px;">Política de Envíos</h3>
+$session.getRecord("Store", 1).get("Terms And Conditions")
+</div>

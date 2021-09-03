@@ -1,0 +1,11 @@
+#set($money = $engine.newMoney(1200))
+#set($amountM = $money.getCents().toString())
+#set($length = $amountM.length())
+#set($dif = (12 - $length))
+
+#set($ceros = "")
+#foreach($i in [1..$dif])
+	#set($ceros = "$!{ceros}0")
+#end
+#set($ceros = "$!{ceros}$amountM")
+$ceros

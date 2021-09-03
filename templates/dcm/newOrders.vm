@@ -1,0 +1,58 @@
+#set($map = $engine.newMap())
+
+#if($request.get('lastrecord') == "undefined")
+	#set($lastrecord = 0)
+#else
+	#set($lastrecord = $request.get("lastrecord"))
+#end
+
+#set($query = $session.newQuery("Order"))
+#set($or = $query.addFilterOr())
+$or.addFilter("status", 4)
+
+##$or.addFilter("status", "is null")
+$query.addFilter("Number Of Products", ">", 0)
+$query.addSortField("createDate", "desc")
+#set($orders = $query.getTable())
+
+#set($biggerorders = $orders.getFilteredTable("Id", ">", $lastrecord))
+
+##Check if we need to generate the response
+
+#set($lastrecordquery = $orders.getFirstRecord().getSingleKeyValue())
+
+
+#if($lastrecord == $lastrecordquery)
+	$map.putVoid("status", 1)
+#else
+	$map.putVoid("status", 2)
+#end
+$response.setContentType("application/json")
+
+#define($response)
+	#foreach($order in $orders)
+		<div class="row orderrow newone " style="padding: 12px 25px; margin: 10px;">
+			<h2 style="float: right; text-align: right; border: 2px solid black; border-radius: 6px; display: inline; background: black; color: white; padding: 10px;"># $order.getSingleKeyValue()</h2>
+			#foreach($orderline in $order.getConnectedTable("Orderline"))
+				<h3>x $orderline.get('Quantity') - $orderline.getLabel('Product')</h3>
+			#end
+			<h4>$!order.getLabel("User").replace("(", " (")</h4>
+			<h4>$!order.getLabel("Address"), $!order.getLabel("District"), $!order.getLabel("User.Phone")
+			</h4>
+			<h4>$!order.get("createDate").format("dd/MM/yyyy hh:mm")</h4>
+			<div style="padding-top: 10px">
+			<a href="/templates/dcm/dashboard.vm?token=aKssk2390ads2132990380&dispatch=$order.getSingleKeyValue()" style="background: black; color: white; padding: 7px 20px; margin-top: 40px;">Despachar Orden</a>
+			</div>
+		</div>
+	#end
+#end
+
+$map.putVoid("response", $response)
+#if($orders.size() == 0)
+	#set($html = "<h1>No hay órdenes pendientes en este momento.</h1>")
+	#set($lastrecordquery = 0)
+#end
+#set($html2 = "<h2>Última actualización: $application.newDate().format('dd/MM/yyyy hh:mm:ss')</h2>")
+$map.putVoid("notifications", "$!html $!html2")
+$map.putVoid("lastrecord", $lastrecordquery)
+$map.toJSON()

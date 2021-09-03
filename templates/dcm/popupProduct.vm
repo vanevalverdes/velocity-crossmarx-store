@@ -1,0 +1,2 @@
+#set($popup = true)
+#parse("/templates/dcm/product.vm")

@@ -1,0 +1,65 @@
+##getCart()
+
+#set($test = $session.getVariable('test'))
+
+#set($orderId = $request.get('OrderID'))
+#set($resultsCodeValue = $request.get('ReasonCode'))
+#set($authCodeValue = $request.get('AuthCode'))
+
+
+## Result Code
+
+	#set($map = $session.getRecord('log', $orderId))
+	
+	#set($orderCart = $map.get('Order'))
+	#set($amount = $map.get('Amount'))
+#*	
+	#set($url = "$card")
+	#if($url.length() >= 12)
+		#set($pos = 12)
+		#set($end = $url.length())
+		#set($substring = $url.substring($pos, $end))
+	#end
+*#
+	#set($record = $session.newRecord('log'))
+	#set($void = $record.store('JSON', "$request.get('MerID')&$request.get('AcqID')&$request.get('OrderID')&$request.get('ResponseCode')&$request.get('ReasonCode')&$request.get('ReasonCodeDesc')&$request.get('ReferenceNo')&$request.get('PaddedCardNo')&$request.get('AuthCode')&$request.get('CVV2Result')&$request.get('OriginalResponseCode')&$request.get('Signature')&$request.get('SignatureMethod')"))
+	#set($void = $record.store('Order', $orderCart))
+	#set($void = $record.store('Type', 1))
+	#set($void = $record.save())
+
+
+	#if($resultsCodeValue == 1)
+
+		#if(!$orderCart)
+			#set($orderCart = $session.getRecord('log', $orderId).get('Order'))
+		#end
+		
+		#set($newstatus = $session.newRecord("Status Update"))
+		$newstatus.putVoid("Order", $orderCart)
+		$newstatus.putVoid("Status", 4)
+		#set($void = $newstatus.save())
+		
+        #set($void = $session.removeVariable("paid"))
+        <!-- end: DELIVERY INFO -->
+		$session.removeVariable('cart')
+		$session.removeVariable('orderlines')	
+		$session.removeVariable('sendEmail')
+						
+		#set($void = $session.putVariable("paid", true))
+		#parse('/templates/dcm/payment/capture.vm')
+		#set($url = "/orden-creada?order=${orderCart}&id=${orderId}")
+
+		$session.getReplaceScript($url)
+		
+	#elseif($resultsCodeValue == 2)
+		
+		#set($url = "/confirmar-pagar?error=1&order=$!{orderCart}&id=${orderId}")
+		$session.getReplaceScript($url)
+	#elseif($resultsCodeValue == 3)
+		#set($url = "/confirmar-pagar?error=1&order=$!{orderCart}&id=${orderId}")
+		$session.getReplaceScript($url)
+	#else
+	#set($url = "/confirmar-pagar?error=1&order=$!{orderCart}&id=${orderId}")
+		$session.getReplaceScript($url)
+
+	#end

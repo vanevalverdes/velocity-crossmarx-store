@@ -1,0 +1,245 @@
+
+#if(!$request.get("tokenid"))
+
+	##set($money = $engine.newMoney(1200))
+	#set($amountM = $money.getCents().toString())
+	#set($length = $amountM.length())
+	#set($dif = (12 - $length))
+	
+	#set($ceros = "")
+	#foreach($i in [1..$dif])
+		#set($ceros = "$!{ceros}0")
+	#end
+	#set($cerosFinal = "$!{ceros}$amountM")
+
+#try($coso)
+	#set($newResponse = $session.newRecord('log'))
+	#set($void = $newResponse.store('Order', $orderCart))
+	#set($void = $newResponse.save())
+#end
+
+	#set($orderId = "$newResponse.get('Id')")
+	#set($amount = "$cerosFinal")
+	#set($currency = "188")
+	#set($card = "$cardnumber")
+	#set($date = "$date")
+	#set($cvv = "$cvv")
+
+
+	#set($string = "mOo8X8Ld33303086464748"+"$orderId"+"$amount"+"$currency")
+
+	
+	##String: a1B23c1234567890464748FACTEST01000000001200840<br>
+	##set($string = "a1B23c1234567890464748FACTEST01000000001200840")
+	#set($sha1 = $engine.getSHA1($string))
+	##Result GET SHA1: $sha1<br>
+	#set($map = $engine.newMap())
+	$map.putVoid('order', $orderId) 
+	$map.putVoid('amount', $amount) 
+	$map.putVoid('currency', $currency) 
+	$map.putVoid('card', $card) 
+	$map.putVoid('date', $date) 
+	$map.putVoid('cvv', $cvv) 
+	$map.putVoid('nameoncard', $nameoncard) 
+	$map.putVoid('orderCart', $cart.get('Id'))
+	$session.putVariable('map', $map)
+	
+	<script>
+	function hexToBase64(hexstring) {
+	    return btoa(hexstring.match(/\w{2}/g).map(function(a) {
+	        return String.fromCharCode(parseInt(a, 16));
+	    }).join(""));
+	}
+	
+	var answer = hexToBase64("$sha1");
+	var url = "/templates/dcm/confirmacion_orden.vm?amex=on&tokenid=" + answer;
+	// Simulate an HTTP redirect:
+	window.location.replace(url);
+	</script>
+
+#else
+
+#set($map = $session.getVariable('map'))
+
+
+#set($orderId = $map.get('order'))
+#set($amount = $map.get('amount'))
+#set($currency = $map.get('currency'))
+#set($card = $map.get('card'))
+#set($date = $map.get('date'))
+#set($cvv = $map.get('cvv'))
+#set($orderCart = $map.get('orderCart'))
+#set($nameoncard = $map.get('nameoncard'))
+
+$session.removeVariable('map')
+##set($signature = $engine.encodeStringToBASE64("$sha1"))
+##Result Encode String to BASE64: $signature 
+
+	#define($xml)
+	<?xml version="1.0" encoding="utf-8"?>
+	<AuthorizeRequest xmlns:i="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://schemas.firstatlanticcommerce.com/gateway/data">
+	    <TransactionDetails>
+	        <AcquirerId>464748</AcquirerId>
+	        <MerchantId>33303086</MerchantId>
+	        <OrderNumber>$orderId</OrderNumber>
+	        <TransactionCode>0</TransactionCode>
+	        <Amount>$amount</Amount>
+	        <Currency>$currency</Currency>
+	        <CurrencyExponent>2</CurrencyExponent>
+	        <SignatureMethod>SHA1</SignatureMethod>
+	        <Signature>$request.get("tokenid")</Signature>
+	        <IPAddress />
+	        <CustomData />
+	        <CustomerReference />
+	        <ExtensionData />
+	    </TransactionDetails>
+	    <CardDetails>
+	        <CardNumber>$card</CardNumber>
+	        <CardExpiryDate>$date</CardExpiryDate>
+	        <CardCVV2>$cvv</CardCVV2>
+	        <IssueNumber />
+	        <StartDate />
+	        <Installments>0</Installments>
+	        <DocumentNumber />
+	        <ExtensionData />
+	    </CardDetails>
+	    <BillingDetails>
+	        <BillToAddress />
+	        <BillToAddress2 />
+	        <BillToZipPostCode />
+	        <BillToFirstName> </BillToFirstName>
+	        <BillToLastName />
+	        <BillToCity />
+	        <BillToState />
+	        <BillToCountry />
+	        <BillToEmail />
+	        <BillToTelephone />
+	        <BillToCounty />
+	        <BillToMobile />
+	        <ExtensionData />
+	    </BillingDetails>
+	    <ThreeDSecureDetails>
+	        <ECIIndicator />
+	        <AuthenticationResult />
+	        <TransactionStain />
+	        <CAVV />
+	    </ThreeDSecureDetails>
+	    <RecurringDetails>
+	        <IsRecurring>false</IsRecurring>
+	        <ExecutionDate />
+	        <Frequency />
+	        <NumberOfRecurrences>0</NumberOfRecurrences>
+	    </RecurringDetails>
+	    <ShippingDetails>
+	        <ShipToAddress />
+			<ShipToAddress2 />
+			<ShipToZipPostCode />
+			<ShipToFirstName />
+			<ShipToLastName />
+			<ShipToCity />
+			<ShipToState />
+			<ShipToCountry />
+			<ShipToEmail />
+			<ShipToTelephone />
+			<ShipToMobile />
+			<ShipToCounty />
+		</ShippingDetails>
+	    <FraudDetails>
+	        <SessionId />
+	        <AuthResponseCode />
+	        <AVSResponseCode />
+	        <CVVResponseCode />
+	    </FraudDetails>
+	    <InterfaceCode>
+		</InterfaceCode>
+	    <TransactionID>00000000-0000-0000-0000-000000000012</TransactionID>
+	    <Version>0</Version>
+	    <ExtensionData />
+	</AuthorizeRequest>
+	#end
+	
+	#set($soapMessageXML = "$xml")
+	
+	#set($request = $engine.newServiceMessage("text/plain"))
+	$request.setRootElement($engine.newValueElement($soapMessageXML)) 
+	##set($client = $engine.newServiceClient("https://ecm.firstatlanticcommerce.com/PGServiceXML/Authorize"))
+	#set($client = $engine.newServiceClient("https://marlin.firstatlanticcommerce.com/PGServiceXML/Authorize"))
+	$client.setAction("POST")
+	$client.setContentType("application/xml")
+	#set($void = $client.invoke($request))
+	#set($responseparsed = $engine.parseElement($client.getResponse(), "application/xml"))
+
+
+
+## Auth Code
+	#set($results = $responseparsed.getMember('CreditCardTransactionResults'))
+	#set($authCode = $results.getMember('AuthCode'))
+	#set($authCodeValue = $authCode.getValue())
+
+## Result Code
+	
+	#set($url = "$card")
+	#set($pos = 12)
+	#set($end = $url.length())
+	#set($substring = $url.substring($pos, $end))
+	
+	
+	#set($resultsCode = $results.getMember('ResponseCode'))
+	#set($resultsCodeValue = $resultsCode.getValue())
+
+	#set($record = $session.newRecord('log'))
+	#set($void = $record.store('JSON', $client.getResponse()))
+	#set($void = $record.store('Card Number', $substring))
+	#set($void = $record.store('Date', $date))
+	##set($void = $record.store('CVV', $cvv))
+	#set($void = $record.store('Order', $orderCart))
+	#set($void = $record.store('Auth', $authCodeValue))
+	#set($void = $record.store('Amount', $amount))
+	#set($void = $record.store('Type', 1))
+	#set($void = $record.save())
+
+
+	#if($resultsCodeValue == 1)
+		#*
+		#set($date1 = $application.newDate().addSeconds(1))
+		##$cart.putVoid('Date', $date1)
+		#set($savedCart = $cart.saveWithConnectedTables(true))
+		#foreach($orderline in $orderlines)
+			$orderline.forceCalculateAllFields()
+			#set($savedOrderline = $orderline.saveWithConnectedTables(true))
+		#end
+		
+		#set($void = $record.store('Order', $cart.get('Id')))
+		#set($void = $record.save())
+		*#
+		
+		#set($newstatus = $session.newRecord("Status Update"))
+		$newstatus.putVoid("Order", $orderCart)
+		$newstatus.putVoid("Status", 4)
+		#set($void = $newstatus.save())
+		
+        #set($void = $session.removeVariable("paid"))
+        <!-- end: DELIVERY INFO -->
+		$session.removeVariable('cart')
+		$session.removeVariable('orderlines')	
+		$session.removeVariable('sendEmail')
+		
+		#parse('/templates/dcm/payment/capture.vm')
+	#set($url = "/templates/dcm/orden_creada.vm?order=${orderCart}")
+	##set($url = "/templates/dcm/orden_creada.vm?OrderID=${orderId}")
+		$session.getReplaceScript($url)
+		
+	#elseif($resultsCodeValue == 2)
+		
+		#set($url = "/templates/dcm/confirmacion_orden.vm?error=1")
+		$session.getReplaceScript($url)
+	#elseif($resultsCodeValue == 3)
+		#set($url = "/templates/dcm/confirmacion_orden.vm?error=1")
+		$session.getReplaceScript($url)
+	#else
+	#set($url = "/templates/dcm/confirmacion_orden.vm?error=1")
+		$session.getReplaceScript($url)
+
+	#end
+
+#end

@@ -1,0 +1,86 @@
+#if(!$request.get("ajax"))
+	$document.surround()
+#end
+#if($request.get("token") == "aKssk2390ads2132990380")
+#if($request.get("dispatch"))
+	#set($record = $session.getRecord("Order", $request.getInteger("dispatch")))
+	#set($newstatus = $session.newRecord("Status Update"))
+	$newstatus.putVoid("Order", $record.getSingleKeyValue())
+	$newstatus.putVoid("Status", 2)
+	#set($void = $newstatus.save())
+	#if($record)
+		#set($cart = $record)
+		#set($orderlines = $cart.getConnectedTable("Orderline"))
+	#end
+	#set($titletext = "Su Orden Ha Sido Despachada - Distribuidora Café Montaña")
+	#set($contenttext = "<p>Su orden ha sido despachada.</p>
+	<p>Número de Orden: <strong>$cart.getSingleKeyValue()</strong></p>
+	<p>Items Comprados</strong></p>
+	<table>
+	#foreach($orderline in $orderlines)
+		<tr><td style='padding-top: 6px; padding-bottom: 6px; padding-left: 20px; padding-right: 20px;'>$!orderline.get('Quantity') $!orderline.get('Product.Name')</td><td style='padding-top: 6px; padding-bottom: 6px; padding-left: 20px; padding-right: 20px;'> ₡ $!orderline.getLabel('Total')</td></p>
+	#end
+	#if($cart.get('shipping cost').getCents() > 0)
+		<tr><td style='padding-top: 6px; padding-bottom: 6px; padding-left: 20px; padding-right: 20px;'>Envío</td><td style='padding-top: 6px; padding-bottom: 6px; padding-left: 20px; padding-right: 20px;'> ₡ $cart.getLabel('Shipping Cost')</td></p>
+	#end
+	<tr><td style='padding-top: 6px; padding-bottom: 6px; padding-left: 20px; padding-right: 20px;'>Total</td><td style='padding-top: 6px; padding-bottom: 6px; padding-left: 20px; padding-right: 20px;'> ₡ $cart.getLabel('Total')</td></p>
+	</table>")
+	$application.email("info@dcm.cr", "$cart.getForeignRecord('User').get('Email')", "$titletext", "#parse('/templates/dcm/emailtemplate.vm')")	
+#end
+<style>
+.navbar.navbar-default.cx_menu.navbar-fixed-top.cx_menu-application {
+    display: none;
+}
+.cx_fixed-top-menu-wrapper .cx_menu + :not(.cx_toolbar), .cx_fixed-vertical-menu-wrapper .navbar-fixed-top + :not(.cx_toolbar) {
+    margin-top: 16px;
+}
+.orderrow{
+	padding: 20px 0;
+	min-height: 100px;
+
+}
+.newone{
+	background-color: #ffd6d6;
+}
+.recentone{
+	background-color: #d7ffd6;
+}
+</style>
+<div class="container-fluid text-center">
+	<img src="https://www.dcm.cr/templates/dcm/img/Logo%20DCM%20Color.png" style="height: 120px;" class="center">
+</div>
+<div class="notificationsarea" style="padding: 20px; text-align: center;">
+
+</div>
+<div class="container orderarea" style="padding: 20px 0;">
+
+</div>
+ <audio class="my_audio" style="opacity: 0;" controls>
+  <source src="/ping.mp3" type="audio/mpeg">
+Your browser does not support the audio element.
+</audio> 
+<script>
+	var lastrecord = 0;
+	function getData(){
+		$.ajax('/templates/dcm/newOrders.vm', {
+		    type: 'POST',  // http method
+		    data: 'lastrecord=' + lastrecord,
+		    success: function (e) {
+				var responsestatus = e.status;
+				lastrecord = e.lastrecord;
+				if(responsestatus == 2){
+					console.log(e);
+					$('.orderarea').html(e.response);
+					$(".my_audio").trigger('load');
+				}
+				$(".notificationsarea").html(e.notifications);
+		    },
+		    error: function (jqXhr, textStatus, errorMessage) {
+		            $('.orderarea').prepend('Error' + errorMessage);
+		    }
+		});
+	};
+	getData();
+ 	setInterval(function(){getData()}, 10000);
+</script>
+#end

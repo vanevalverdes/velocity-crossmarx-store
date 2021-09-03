@@ -1,0 +1,5 @@
+#if($request.get("confirm") == true)
+	$session.removeVariable("uid")
+	$session.removeVariable("sid")
+	$session.getReplaceScript("/")
+#end

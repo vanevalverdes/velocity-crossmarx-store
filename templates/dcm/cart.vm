@@ -1,0 +1,218 @@
+#if($session.getVariable("discount")) 
+	#set($nicemessage = "Puede aplicar un descuento de 20% en los productos Kapiwo, Segafredo y Montaña si su orden es de más de 12500 colones.")
+#end
+$document.surround('/templates/dcm/surround.vm')
+#checkloginstate
+
+#getCart()
+#logCart()
+
+<script>
+	console.log("$void $cartLog $cartlog $cart $cart.get('User')");
+</script>
+#if($orderlines.size() == 0)
+	$session.getReplaceScript("/comprar-cafe")
+#end
+
+#if($request.get("quantity"))
+	#set($quantities = $request.getList("quantity"))
+	#foreach($quantity in $quantities)
+		#set($orderline = $orderlines.get($foreach.index))
+		$orderline.store("Quantity", $quantity)
+	#end
+#end
+
+#set($initialtotal = $orderlines.getSum("Subtotal"))
+
+
+#set($discounttemp = $engine.newMoney(0))
+#if($initialtotal.getCents() > 1250000 && $cart.get("discount code") == 2020)
+	#foreach($orderline in $orderlines)
+		#if($orderline.get("Product.Discount") == true)
+			#if($orderline.get("Product.Brand") == "SEGAFREDO" || $orderline.get("Product.Brand") == "MONTAÑA" || $orderline.get("Product.Brand") == "KAPIWO" ))
+				#set($orderlinedisc = $orderline.get("Subtotal").div(100).multiply(20))
+				#set($discounttemp = $discounttemp.add($orderlinedisc))
+			#end
+		#end
+	#end
+	#set($return = $discounttemp)
+#else
+	#set($return = 0)
+#end
+
+
+$cart.recalculate("Subtotal")
+
+$cart.recalculate("Total")
+
+#set($return = $orderlines.getSum("Subtotal"))
+#set($taxes = $orderlines.getSum("Taxes"))
+#set($total = $orderlines.getSum("Total").subtract($discounttemp))
+
+#if($request.get("payment") == true)
+	$session.getReplaceScript("/direccion-envio")
+#end
+
+
+        <style>
+            #page-title {
+                top: -120px;
+                margin-bottom: -124px;
+                position: relative;
+                padding: 220px 0 220px 0;
+            }
+
+            section {
+                padding: 30px 0;
+                padding-bottom: 30px;
+                position: relative;
+                width: 100%;
+                overflow: hidden;
+                z-index: 1;
+                background-color: #ffffff;
+            }
+        </style>
+        <section id="page-title" class="text-light"
+            style="background-image:url(/templates/dcm/img/Header_Resumen-Confirmacion_Orden.png); background-position:center; background-size: cover;">
+            <div class="container">
+                <div class="breadcrumb">
+                    <ul>
+                    </ul>
+                </div>
+                <div class="page-title">
+                </div>
+            </div>
+        </section>
+        <!-- Register -->
+        <section>
+            <div class="container">
+            	                            	<form>
+
+                <div class="row">
+                    <div class="col-xs-6 col-lg-6 p-t-10">
+                        <div class="heading-text text-left heading-section">
+                            <h2>RESUMEN DE SU ORDEN</h2>
+	                        #if($nicemessage)
+	                        	<div class="alert alert-success success">$nicemessage </div>
+	                        #end
+                        </div>
+                    </div>
+                </div>
+                <div class="shop-cart">
+                    <div class="table table-sm table-responsive">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th class="cart-product-remove"></th>
+                                    <th class="cart-product-thumbnail" style="font-size: x-large;"><b>Producto </b></th>
+                                    <th class="cart-product-name"></th>
+                                    <th class="cart-product-price" style="font-size: x-large;"><b>Precio Unitario</b>
+                                    </th>
+                                    <th class="cart-product-quantity" style="font-size: x-large;"><b>Cantidad</b></th>
+                                    <th class="cart-product-subtotal" style="font-size: x-large;"><b>Total</b></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                            	#foreach($orderline in $orderlines)
+                                <tr>
+                                    <td class="cart-product-remove">
+                                        <a href="/carrito?delete=$foreach.index"><i class="fa fa-times"></i></a>
+                                    </td>
+                                    <td class="cart-product-thumbnail">
+                                        <a href="#">
+                                            <img src="$orderline.getForeignRecord('Product').getConnectedTable('Attachment').getFirstRecord().getBlobUrl('File', 100, 100)" style="max-width: 100px;">
+                                        </a>
+                                    </td>
+                                    <td class="cart-product-description">
+                                        $orderline.get("Product.Name")
+                                    </td>
+                                    <td class="cart-product-price">
+                                        <span class="amount">₡ $orderline.getLabel("Product.Price") </span>
+
+                                    </td>
+                                    <td class="cart-product-quantity">
+                                        <div class="quantity">
+                                            <input type="button" class="minus" value="-">
+                                            <input type="text" class="qty" value="$orderline.get('Quantity')" name="quantity">
+                                            <input type="button" class="plus" value="+" data-max="$orderline.getForeignRecord('Product').get('Available Stock')">
+                                        </div>
+                                    </td>
+                                    <td class="cart-product-subtotal">
+                                        <span class="amount">₡ $orderline.getLabel('Subtotal')</span> 
+                                    </td>
+                                </tr>
+                        		#end
+                        		
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="row">
+                        <div class="col-lg-12 text-right">
+                            <a href="/comprar-cafe"><button type="button" class="btn" style="background-color: #2A795C;">CONTINUAR
+                                COMPRANDO</button></a>
+                            <button type="submit" class="btn" style="background-color: #2A795C;">ACTUALIZAR CARRITO</button>
+                        </div>
+                    </div>
+                    </form>
+                    <div class="row justify-content-lg-end">
+                        <hr class="space">
+                        <div class="col-lg-6">
+                            <div class="table-responsive">
+                                <h4>RESUMEN DE COMPRA</h4>
+                                <table class="table">
+                                    <tbody>
+                                        <tr>
+                                            <td class="cart-product-name">
+                                                <strong>Subtotal</strong>
+                                            </td>
+                                            <td class="cart-product-name text-right">
+                                                <span class="amount">₡ $!return.format("es") </span>
+                                            </td>
+                                        </tr>
+                                      #*  <tr>
+                                            <td class="cart-product-name">
+                                                <strong>Envío</strong>
+                                            </td>
+                                            <td class="cart-product-name  text-right">
+                                                <span class="amount">₡0,00</span>
+                                            </td>
+                                        </tr> *#
+                                        <tr>
+                                            <td class="cart-product-name">
+                                                <strong>Impuestos</strong>
+                                            </td>
+                                            <td class="cart-product-name  text-right">
+                                                <span class="amount">₡ $!taxes.format("es")</span>
+                                            </td>
+                                        </tr>  
+                                        <tr>
+                                            <td class="cart-product-name">
+                                                <strong>Descuento</strong>
+                                            </td>
+                                            <td class="cart-product-name  text-right">
+                                                <span class="amount">₡ $discounttemp.format("es")</span>
+                                            </td>
+                                        </tr>                                         
+                                        <tr>
+                                            <td class="cart-product-name">
+                                                <strong>Total</strong>
+                                            </td>
+                                            <td class="cart-product-name text-right">
+                                                <span class="amount color lead"><strong>₡ $!total.format("es")</strong></span>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                            #if($return.getCents() >= 500000)
+                            <a href="/direccion-envio" class="btn btn-block col-md-4 float-right"
+                                style="background-color: #2A795C;"><span>PAGAR</span></a>
+                            #else
+                            	<div class="alert alert-warning"> Para continuar el monto debe ser de al menos ₡5000 colones.</div>
+                            #end
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+        <!-- end: Register -->

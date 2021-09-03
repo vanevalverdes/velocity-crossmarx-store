@@ -1,0 +1,45 @@
+##set($amount = 000000563000)
+##set($orderId = 60)
+
+#define($xmlCapture)
+<?xml version="1.0" encoding="UTF-8"?>
+	<TransactionModificationRequest xmlns:i="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://schemas.firstatlanticcommerce.com/gateway/data">
+		<AcquirerId>464748</AcquirerId>
+		<Amount>$amount</Amount>
+		<CurrencyExponent>2</CurrencyExponent>
+		<MerchantId>33303086</MerchantId>
+		<ModificationType>1</ModificationType>
+		<OrderNumber>$orderId</OrderNumber>
+		<Password>mOo8X8Ld</Password>
+	</TransactionModificationRequest>
+#end
+#set($soapMessageXML = "$xmlCapture")
+
+#set($request = $engine.newServiceMessage("text/plain"))
+$request.setRootElement($engine.newValueElement($soapMessageXML)) 
+##set($client = $engine.newServiceClient("https://ecm.firstatlanticcommerce.com/PGServiceXML/TransactionModification"))
+#set($client = $engine.newServiceClient("https://marlin.firstatlanticcommerce.com/PGServiceXML/TransactionModification"))
+$client.setAction("POST")
+$client.setContentType("application/xml")
+#set($void = $client.invoke($request))
+##$void<br>
+#set($responseparsed = $engine.parseElement($client.getResponse(), "application/xml"))
+##$responseparsed<br>
+
+## Result Code
+
+	#set($resultsCode = $responseparsed.getMember('ResponseCode'))
+	#set($resultsCodeValue = $resultsCode.getValue())
+	
+		#if(!$orderCart)
+			#set($orderCart = $session.getRecord('log', $orderId).get('Order'))
+		#end
+
+
+	#set($record = $session.newRecord('log'))
+	#set($void = $record.store('JSON', $responseparsed))
+	#set($void = $record.store('Response Code', $resultsCodeValue))
+	#set($void = $record.store('Original ID', $orderId))
+	#set($void = $record.store('Order', $orderCart))
+	#set($void = $record.store('Type', 2))
+	#set($void = $record.save())

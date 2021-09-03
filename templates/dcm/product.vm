@@ -1,0 +1,128 @@
+#if($popup)
+	$document.surround('/templates/dcm/popupSurround.vm')
+#else
+	$document.surround('/templates/dcm/surround.vm')
+#end
+
+#set($product = $session.getRecord("Product", $request.getPath().split("/").get(2)))
+
+
+<style>
+#page-title {
+    top: -120px;
+    margin-bottom: -124px;
+    position: relative;
+    padding: 220px 0 220px 0;
+}
+</style>
+
+<script>
+dataLayer.push({
+		'event': 'view_item',
+		'name': '$product.get("Name")',
+		'price': '$product.getLabel("Price")',
+		'brand': '$product.get("Brand")',
+		'sku': '$product.get("id")'
+	}); 
+</script>
+
+
+   
+#if($product.get("Brand") == "MONTAÑA")
+
+#elseif($product.get("Brand") == "KAPIWO")
+
+#elseif($product.get("Brand") == "DON MANUEL")
+
+#elseif($product.get("Brand") == "SEGAFREDO")
+
+#elseif($product.get("Brand") == "EL YODITO")
+
+#end
+<section id="page-title" class="text-light" style="background-image:url(/templates/dcm/img/Header_Resumen-Confirmacion_Orden.png); background-size: cover; background-position: center bottom;">
+<div class="container">
+<div class="breadcrumb">
+<ul>
+
+</ul>
+</div>
+<div class="page-title">
+
+</div>
+</div>
+</section>
+        <!-- SHOP PRODUCT PAGE -->
+        
+        <section id="product-page" class="product-page p-b-0">
+            <div class="container">
+                <div class="product">
+                    <div class="row">
+                        <div class="col-lg-5 p-t-40">
+                            <div class="carousel" data-items="1">
+                                #foreach($image in $product.getConnectedTable("Attachment"))
+                                    <img src="$image.getBlobUrl('File', 500, 500)" style="background: #eee;">
+                                #end
+                            </div>
+                        </div>
+                        <div class="col-lg-7">
+                        	<div class="row">
+                            <div class="product-description">
+                                <div class="product-category">$product.get("Brand") </div>
+                                <div class="product-title">
+                                    <h3><a href="#">$!product.get("Name")</a></h3>
+                                </div>
+                                <div class="product-price;float-right;"><ins><b>₡$product.getLabel("Price")</b></ins>
+                                </div>
+                                <div class="seperator m-b-10"></div>
+									$!product.get("Description")
+                                <div class="seperator m-b-10"></div>
+                            	                        	<form style="width: 100%;">
+                            <div class="row">
+
+                                <div class="col-lg-6 m-b-30">
+                                    <h6>CANTIDAD</h6>
+                                    <div class="cart-product-quantity">
+                                        <div class="quantity m-l-5">
+                                            <input type="button" value="-" class="minus">
+                                            <input type="text" value="1" class="qty">
+                                            <input type="button" value="+" class="plus" data-max="$product.get('available stock')">
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-lg-6 m-t-25">
+                                    <button class="btn btn-lg addtocart btn-block " type="button" style="background-color: #2A795C;"><i
+                                            class="icon-shopping-cart"></i> AÑADIR</button>
+                                </div>
+                                <div class="col-lg-6">
+                                	<a href="/comprar-cafe">
+                                    <button class="btn btn-lg btn-block" type="button" style="background-color: #2A795C;">SEGUIR
+                                        COMPRANDO</button>
+                                     </a>
+                                </div>
+                                <div class="col-lg-6">
+
+                                </div>
+                                                            </div>
+
+                                                            </form>
+
+
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+        
+        <!-- end: SHOP PRODUCT PAGE -->
+
+    </div>
+    <!-- end: Body Inner -->
+
+    <!-- Scroll top -->
+    <a id="scrollTop"><i class="icon-chevron-up"></i><i class="icon-chevron-up"></i></a>
+    <!--Plugins-->
+
+
+	#define($extrapageplugins)
+
+	#end

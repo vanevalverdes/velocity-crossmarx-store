@@ -1,0 +1,110 @@
+$document.surround('/templates/dcm/surround.vm')
+
+#if($request.get('loginemail') && $request.get('loginpass'))
+	#set($email = $request.get('loginemail'))
+	#set($loginerrors = [])
+	#if($session.getTable('Customer').getFilteredTable('Email', $email).size() == 0) #set($void = $loginerrors.add("No existe una cuenta de correo electrónico asociado.")) #end
+	#if($session.getTable('Customer').getFilteredTable('Email', $email).size() == 1) #set($useraccount = $session.getTable('Customer').getFilteredTable('Email', $email).getFirstRecord()) #end
+	#if($engine.getMD5encodedString("$request.get('loginpass')|1") != $useraccount.get('Password')) 
+		#set($void = $loginerrors.add("La contraseña o el usuario son incorrectos. Favor intentar nuevamente.")) 
+	#elseif($engine.getMD5encodedString("$request.get('loginpass')|1") == $useraccount.get('Password'))
+		#set($sid = $engine.getMD5encodedString("$useraccount.get('Token')|$useraccount.get('Email').substring(0, 4)|1"))
+		#set($uid = $useraccount.getSingleKeyValue())
+			$session.putVariable("sid", $sid)
+			$session.putVariable("uid", $uid)
+			#if($session.getVariable('origin'))
+				#set($origin = $session.getVariable('origin'))
+				$session.getReplaceScript($origin)
+			#elseif($request.get("origin"))
+				#set($origin = $request.get("origin"))
+				$session.getReplaceScript($origin)	
+			#else
+				$session.getReplaceScript("/carrito")
+			#end	
+			#set($loginmessage = "Ha ingresado exitosamente a su cuenta.")
+	#end 		
+#end
+
+        <style>
+            #page-title {
+                top: -120px;
+                margin-bottom: -124px;
+                position: relative;
+                padding: 220px 0 220px 0;
+            }
+
+            section {
+                padding: 30px 0;
+                padding-bottom: 30px;
+                position: relative;
+                width: 100%;
+                overflow: hidden;
+                z-index: 1;
+                background-color: #ffffff;
+            }
+        </style>
+        <section id="page-title" class="text-light"
+            style="background-image:url(/templates/dcm/img/Header_Registro-Login.png); background-position:center; background-size: cover;">
+            <div class="container">
+                <div class="breadcrumb">
+                    <ul>
+                    </ul>
+                </div>
+                <div class="page-title">
+                </div>
+            </div>
+        </section>
+        <!-- Register -->
+        <section>
+            <div class="container">
+                <div class="row">
+                    <div class="col-xs-6 col-lg-6 p-t-10">
+                        <div class="heading-text text-left heading-section">
+                            <h2>INICIAR SESIÓN</h2>
+                                    #if($loginerrors.size() > 0)
+                                    	<div class="alert alert-warning">
+                                    	#foreach($error in $loginerrors)
+                                    		$error
+                                    	#end
+                                    	</div>
+                                    #end                                
+                                    #if($loginmessage)
+	                                  	<div class="alert alert-success">
+	                                    		$loginmessage
+                                    	</div>                                    	
+                                    #end                              
+                            <span class="lead">¿No tiene cuenta? Cree su cuenta<a href="/crear-cuenta"> AQUÍ</a><br><br></span>
+                            <form method="get">
+                                <div class="form-row">
+                                    <div class="form-group col-md-6">
+                                        <input type="text" class="form-control" name="loginemail" placeholder="Correo Electrónico"
+                                            required>
+                                    </div>
+                                </div>
+                                <div class="form-row">
+                                    <div class="form-group col-md-6">
+                                        <input type="password" class="form-control" name="loginpass"
+                                            placeholder="Contraseña" required>
+                                    </div>
+                                </div>
+                            <button class="btn btn-block col-md-6" type="submit"
+                                style="background-color: #2A795C;">INICIAR SESIÓN</button>
+                            </form>
+
+                        </div>
+                    </div>
+                </div>
+                <a href="/cambiar-contrasena">¿Olvidó su contraseña? Haz click aquí </a>
+                ## <div class="custom-control custom-checkbox">
+               ##     <input type="checkbox" name="reminders" id="reminders" class="custom-control-input" value="1"
+                ##        required>
+               ##     <label class="custom-control-label" for="reminders">Mantenerme registrado</a></label>
+               ## </div>
+                <br>
+
+            </div>
+        </section>
+        <!-- end: Register -->
+		#parse("/templates/shippingInfoSection.vm")
+
+        

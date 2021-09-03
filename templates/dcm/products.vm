@@ -1,0 +1,179 @@
+$document.surround('/templates/dcm/surround.vm')
+#set($query = $session.newQuery("Product"))
+#if($request.get("cat"))}
+	$query.addFilter("Brand", "like", $request.get('cat'))
+#end
+#if($request.get("price") == "highest")
+	$query.addSortField("Price", "desc")
+#elseif($request.get("price") == "lowest")
+	$query.addSortField("Price", "asc")	
+#else
+	$query.addSortField("Type Of Product", "desc")	
+
+	$query.addSortField("Brand", "desc")	
+#end
+$query.addFilter("Available Stock", ">", 0)
+$query.addFilter("Price", "is not null")
+$query.addFilter("Activo", true)
+#set($products = $query.getTable())
+
+<script>
+dataLayer.push({
+  'event': 'view_item_list',
+  'ecommerce': {
+    'items':[
+		#foreach($product in $products)	
+     {
+		'name': '$product.get("Name")',
+		'price': '$product.getLabel("Price")',
+		'brand': '$product.get("Brand")',
+		'sku': '$product.get("id")'
+     }#if($foreach.count < $products.size()),#end #end	
+     ]}
+  });
+</script>
+
+        <style>
+            #page-title {
+                top: -120px;
+                margin-bottom: -124px;
+                position: relative;
+                padding: 220px 0 220px 0;
+            }
+
+            section {
+                padding: 30px 0;
+                padding-bottom: 30px;
+                position: relative;
+                width: 100%;
+                overflow: hidden;
+                z-index: 1;
+                background-color: #ffffff;
+            }
+            .product-image{
+            	background: #eee;
+            	max-height: 475px;
+            }
+			.product-title {
+			    min-height: 59px;
+			}
+        </style>
+        <section id="page-title" class="text-light"
+            style="background-image:url(/templates/dcm/img/Comprar_Cafe.png); background-position:center; background-size: cover;">
+            <div class="container">
+                <div class="breadcrumb">
+                    <ul>
+
+                    </ul>
+                </div>
+                <div class="page-title">
+
+                </div>
+            </div>
+        </section>
+		
+        <!-- Shop products -->
+        <section>
+            <div class="container">
+                <div class="row m-b-20">
+                    <div class="col-lg-6 p-t-10 m-b-20">
+                        <div class="heading-text text-left heading-section">
+                            <h2>COMPRAR CAFÉ</h2>
+                            <span class="lead">Seleccioná entre nuestras marcas y variedades de<br>
+                                café gourmet, café 100% puro y café mezclado de
+                                Costa Rica.</span>
+                        </div>
+                    </div>
+                    <div class="col-lg-3">
+                        <div class="order-select">
+                            <h6 style="font-size:20px;">Ordenar por Categoría</h6>
+                            <p>Mostrando 1&ndash;$products.size() de $products.size() resultados</p>
+                            <form method="get">
+                                <select class="form-control catselector">
+                                  #*  <option value="order" selected="selected">Café Gourmet</option>
+                                    <option value="">Café 100% Puro</option>
+                                    <option value="">Café Mezclado</option>
+                                    <option value="">Peso 125G - 250G</option>
+                                    <option value="">Peso 340G - 500G</option>
+                                    <option value="">Peso 1KG</option> *#
+                                    <option value="/comprar-cafe">Seleccionar Categoría</option>
+                                    <option value="/comprar-cafe?cat=segafredo#if($request.get('price'))&price=$request.get('price')#end">Café Segafredo</option>
+                                    <option value="/comprar-cafe?cat=kapiwo#if($request.get('price'))&price=$request.get('price')#end">Café Kapiwo</option>
+                                    <option value="/comprar-cafe?cat=montaña#if($request.get('price'))&price=$request.get('price')#end">Café Montaña</option>
+                                    <option value="/comprar-cafe?cat=manuel#if($request.get('price'))&price=$request.get('price')#end">Café Don Manuel</option>
+                                    <option value="/comprar-cafe?cat=yodito#if($request.get('price'))&price=$request.get('price')#end">Café El Yodito</option>
+                                </select>
+                            </form>
+                        </div>
+                    </div>
+                    <div class="col-lg-3">
+                        <div class="order-select">
+                            <h6 style="font-size:20px">Ordenar por Precio</h6>
+                           <p>&nbsp;</p>
+                            <form method="get">
+		                        <select class="form-control priceselector">
+		                        	<option value="/comprar-cafe">Ordenar Por Precio</option>
+		                            <option value="/comprar-cafe?price=lowest#if($request.get('cat'))&cat=$request.get('cat')#end" #if($request.get("price") == "lowest") selected #end>Más bajo primero</option>
+		                            <option value="/comprar-cafe?price=highest#if($request.get('cat'))&cat=$request.get('cat')#end" #if($request.get("price") == "highest") selected #end>Más alto primero</option>
+		                        </select>
+                            </form>
+                        </div>
+                    </div>
+					#if($session.getVariable("discount") || $request.get("discountapply")) 
+						#set($nicemessage = "Puede aplicar un descuento de 20% en los productos Kapiwo, Segafredo y Montaña si su orden es de más de 12500 colones. No aplica para kits y promociones.")
+					#end                                
+                    #if($nicemessage)
+                    	<div class="alert alert-success success">$nicemessage </div>
+                    #end          
+                </div>
+                <!--Product list-->
+                <div class="shop">
+                    <div class="grid-layout grid-3-columns" data-item="grid-item">
+                    	
+                    	#foreach($product in $products)	
+                    		#if($product.get("Brand") != $null && $product.getConnectedTable("Attachment").getFirstRecord().getBlobUrl("File", 400, 400))
+                    		#set($mainimage = $product.getConnectedTable("Attachment").getFirstRecord().getBlobUrl("File", 400, 400))
+		                        <div class="grid-item">
+		                            <div class="product">
+		                                <div class="product-image">
+		                                    <a href="/producto/$product.getSingleKeyValue()/$product.get('Name')"><img alt="Shop product image!" src="$mainimage">
+		                                    </a>
+		                                    <a href="/producto/$product.getSingleKeyValue()/$product.get('Name')"><img alt="Shop product image!" src="$mainimage">
+		                                    </a>
+		                                    <span class="product-wishlist">
+		                                    </span>
+		                                    <div class="product-overlay">
+		                                        <a href="/productpreview/$product.getSingleKeyValue()/$product.get('Name')" data-lightbox="ajax">VER PRODUCTO</a>
+		                                    </div>
+		                                </div>
+		                                <div class="product-description">
+		                                    <div class="product-category">$product.get("Brand")</div>
+		                                    <div class="product-title">
+		                                        <h3><a href="/producto/$product.getSingleKeyValue()/$product.get('Name')">$product.get("Name")</a></h3>
+		                                    </div>
+		                                    <div class="product-price;float-right;"><ins><b>₡$product.getLabel("Price")</b></ins>
+		                                    </div>
+		                                </div>
+		                            </div>
+		                        </div>
+	                        #end
+                        #end
+                        
+                    </div>
+                    <hr>
+                #*    <!-- Pagination -->
+                    <ul class="pagination">
+                        <li class="page-item"><a class="page-link" href="#"><i class="fa fa-angle-left"></i></a></li>
+                        <li class="page-item"><a class="page-link" href="#">1</a></li>
+                        <li class="page-item"><a class="page-link" href="#">2</a></li>
+                        <li class="page-item active"><a class="page-link" href="#">3</a></li>
+                        <li class="page-item"><a class="page-link" href="#">4</a></li>
+                        <li class="page-item"><a class="page-link" href="#">5</a></li>
+                        <li class="page-item"><a class="page-link" href="#"><i class="fa fa-angle-right"></i></a></li>
+                    </ul>
+                    <!-- end: Pagination --> *#
+                </div>
+            </div>
+        </section>
+        <!-- end: Shop products -->
+		#parse("/templates/shippingInfoSection.vm")
